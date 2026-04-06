@@ -58,8 +58,12 @@ const addTeacher = async (req, res) => {
 // Get all teachers
 const getAllTeachers = async (req, res) => {
   try {
+    const { department_id } = req.query;
+    const where = { role: 'teacher' };
+    if (department_id) where.department_id = department_id;
+
     const teachers = await User.findAll({
-      where: { role: 'teacher' },
+      where,
       attributes: ['id', 'name', 'email', 'mobile', 'designation', 'is_hod', 'is_active', 'department_id'],
       include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }]
     });
@@ -111,6 +115,7 @@ const deleteTeacher = async (req, res) => {
 };
 
 // Get all students
+// BUG FIX: removed invalid 'no_dues_status' from attributes array
 const getAllStudents = async (req, res) => {
   try {
     const { department_id, semester, section } = req.query;
@@ -122,9 +127,21 @@ const getAllStudents = async (req, res) => {
     const students = await User.findAll({
       where,
       attributes: ['id', 'name', 'email', 'mobile', 'enrollment_no', 'semester', 'section', 'year', 'department_id'],
-      include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }]
+      include: [
+        { model: Department, as: 'department', attributes: ['id', 'name', 'code'] },
+        { model: NoDuesRequest, as: 'no_dues_requests', attributes: ['status'] }
+      ]
     });
-    res.json(students);
+
+    // Add no_dues_status based on latest request
+    const studentsWithStatus = students.map(student => {
+      const status = student.no_dues_requests.length > 0
+        ? student.no_dues_requests[0].status
+        : 'not_requested';
+      return { ...student.dataValues, no_dues_status: status };
+    });
+
+    res.json(studentsWithStatus);
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -134,7 +151,7 @@ const getAllStudents = async (req, res) => {
 const addStudent = async (req, res) => {
   try {
     const { name, email, mobile, enrollment_no, password, semester, section, year, department_id } = req.body;
-    if (!name || !email || !password || !enrollment_no || !department_id) 
+    if (!name || !email || !password || !enrollment_no || !department_id)
       return res.status(400).json({ message: 'Missing required fields.' });
 
     const exists = await User.findOne({ where: { email } });
@@ -179,7 +196,7 @@ const addStaff = async (req, res) => {
     if (!['account', 'exam'].includes(role)) return res.status(400).json({ message: 'Invalid role.' });
     const exists = await User.findOne({ where: { email } });
     if (exists) return res.status(409).json({ message: 'Email exists.' });
-    
+
     const hashed = await bcrypt.hash(password, 10);
     const staff = await User.create({ name, email, password: hashed, role });
     res.status(201).json({ message: 'Staff added.', staff });
@@ -218,19 +235,25 @@ const getOverview = async (req, res) => {
   try {
     const totalStudents = await User.count({ where: { role: 'student', is_active: true } });
     const completedStatus = await NoDuesRequest.count({ where: { status: 'approved' } });
-    const pendingStatus = await NoDuesRequest.count({ where: { status: 'pending' } });
+    const pendingStatus = await NoDuesRequest.count({ where: { status: 'pending_teachers' } });
     res.json({ totalStudents, completedStatus, pendingStatus });
-  } catch(err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
+// BUG FIX: 'requested_at' → 'initiated_at' (actual column name in schema)
 const downloadStudentReport = async (req, res) => {
   try {
+    const { department_id } = req.query;
+    const where = { role: 'student' };
+    if (department_id) where.department_id = department_id;
+
     const students = await User.findAll({
-      where: { role: 'student' },
+      where,
       include: [
         { model: Department, as: 'department', attributes: ['name', 'code'] },
-        { model: NoDuesRequest, as: 'no_dues_requests', attributes: ['status', 'requested_at'] }
-      ]
+        { model: NoDuesRequest, as: 'no_dues_requests', attributes: ['status', 'initiated_at'] }
+      ],
+      order: [['enrollment_no', 'ASC']]
     });
 
     const workbook = new ExcelJS.Workbook();
@@ -239,28 +262,44 @@ const downloadStudentReport = async (req, res) => {
     worksheet.columns = [
       { header: 'Enrollment No', key: 'enrollment', width: 20 },
       { header: 'Name', key: 'name', width: 25 },
+      { header: 'Mobile', key: 'mobile', width: 15 },
       { header: 'Branch', key: 'branch', width: 15 },
-      { header: 'Sem', key: 'sem', width: 10 },
-      { header: 'No Dues Status', key: 'status', width: 20 },
+      { header: 'Semester', key: 'sem', width: 10 },
+      { header: 'Section', key: 'section', width: 10 },
+      { header: 'No Dues Status', key: 'status', width: 22 },
       { header: 'Total Fees', key: 'total', width: 15 },
       { header: 'Paid Fees', key: 'paid', width: 15 },
+      { header: 'Due Fees', key: 'due', width: 15 },
     ];
+
+    // Header row styling
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern', pattern: 'solid',
+      fgColor: { argb: 'FFD9E1F2' }
+    };
 
     students.forEach(s => {
       const statusObj = s.no_dues_requests && s.no_dues_requests.length > 0 ? s.no_dues_requests[0] : null;
+      const total = s.total_fees || 50000;
+      const paid = s.paid_fees || 0;
       worksheet.addRow({
         enrollment: s.enrollment_no,
         name: s.name,
+        mobile: s.mobile || '-',
         branch: s.department ? s.department.code : '-',
         sem: s.semester,
+        section: s.section,
         status: statusObj ? statusObj.status : 'not_initiated',
-        total: s.total_fees || 50000,
-        paid: s.paid_fees || 0
+        total,
+        paid,
+        due: total - paid
       });
     });
 
+    const deptSuffix = department_id ? `_dept_${department_id}` : '';
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=Students_NoDues_Report.xlsx');
+    res.setHeader('Content-Disposition', `attachment; filename=Students_NoDues_Report${deptSuffix}.xlsx`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) {
@@ -270,30 +309,65 @@ const downloadStudentReport = async (req, res) => {
 
 const downloadStaffReport = async (req, res) => {
   try {
-    const staff = await User.findAll({ where: { role: ['teacher', 'account', 'exam'] } });
+    const { department_id, type } = req.query;
+
+    // type=teachers se sirf teachers, warna saare staff
+    let roles = ['teacher', 'account', 'exam'];
+    if (type === 'teachers') roles = ['teacher'];
+
+    const where = { role: roles };
+    if (department_id) where.department_id = department_id;
+
+    const staff = await User.findAll({
+      where,
+      include: [{ model: Department, as: 'department', attributes: ['name', 'code'] }],
+      order: [['role', 'ASC'], ['name', 'ASC']]
+    });
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Staff List');
+
     worksheet.columns = [
       { header: 'Name', key: 'name', width: 25 },
       { header: 'Email', key: 'email', width: 30 },
+      { header: 'Mobile', key: 'mobile', width: 15 },
       { header: 'Role', key: 'role', width: 15 },
-      { header: 'Status', key: 'status', width: 15 },
+      { header: 'Designation', key: 'designation', width: 20 },
+      { header: 'Department', key: 'department', width: 20 },
+      { header: 'Is HOD', key: 'is_hod', width: 10 },
+      { header: 'Status', key: 'status', width: 12 },
     ];
+
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern', pattern: 'solid',
+      fgColor: { argb: 'FFD9E1F2' }
+    };
+
     staff.forEach(s => {
       worksheet.addRow({
-        name: s.name, email: s.email, role: s.role, status: s.is_active ? 'Active' : 'Inactive'
+        name: s.name,
+        email: s.email,
+        mobile: s.mobile || '-',
+        role: s.role,
+        designation: s.designation || '-',
+        department: s.department ? s.department.name : 'N/A',
+        is_hod: s.is_hod ? 'Yes' : 'No',
+        status: s.is_active ? 'Active' : 'Inactive'
       });
     });
+
+    const deptSuffix = department_id ? `_dept_${department_id}` : '';
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=Staff_Report.xlsx');
+    res.setHeader('Content-Disposition', `attachment; filename=Staff_Report${deptSuffix}.xlsx`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
 };
 
 module.exports = {
-  getDepartments, 
-  addTeacher, getAllTeachers, updateTeacher, deleteTeacher, 
+  getDepartments,
+  addTeacher, getAllTeachers, updateTeacher, deleteTeacher,
   getAllStudents, addStudent, updateStudent, deleteStudent,
   addStaff, getAllStaff, updateStaff, deleteStaff,
   getOverview, downloadStudentReport, downloadStaffReport

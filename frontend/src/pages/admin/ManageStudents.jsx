@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { Pencil, Trash2, Plus, X } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, Download } from 'lucide-react';
 
 const ManageStudents = () => {
   const [students, setStudents] = useState([]);
@@ -14,11 +14,11 @@ const ManageStudents = () => {
     if (filters.department_id) params.append('department_id', filters.department_id);
     if (filters.semester) params.append('semester', filters.semester);
     if (filters.section) params.append('section', filters.section);
-    api.get(`/admin/students?${params}`).then(r => setStudents(r.data)).catch(() => {});
+    api.get(`/admin/students?${params}`).then(r => setStudents(r.data)).catch(() => { });
   };
 
   useEffect(() => {
-    api.get('/admin/departments').then(r => setDepartments(r.data)).catch(() => {});
+    api.get('/admin/departments').then(r => setDepartments(r.data)).catch(() => { });
   }, []);
 
   useEffect(() => { fetchStudents(); }, [filters]);
@@ -28,9 +28,9 @@ const ManageStudents = () => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ id: null, name: '', email: '', password: '', mobile: '', enrollment_no: '', department_id: '', semester: 1, section: 'A', year: 1, is_active: true });
 
-  const resetForm = () => { 
-    setFormData({ id: null, name: '', email: '', password: '', mobile: '', enrollment_no: '', department_id: '', semester: 1, section: 'A', year: 1, is_active: true }); 
-    setShowModal(false); 
+  const resetForm = () => {
+    setFormData({ id: null, name: '', email: '', password: '', mobile: '', enrollment_no: '', department_id: '', semester: 1, section: 'A', year: 1, is_active: true });
+    setShowModal(false);
   };
 
   const handleSave = async (e) => {
@@ -49,7 +49,7 @@ const ManageStudents = () => {
   };
 
   const handleDelete = async (id) => {
-    if(confirm('Are you sure you want to deactivate this student?')) {
+    if (confirm('Are you sure you want to deactivate this student?')) {
       try {
         await api.delete(`/admin/students/${id}`);
         toast.success('Student deactivated.');
@@ -60,11 +60,23 @@ const ManageStudents = () => {
 
   return (
     <Layout>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Manage Students</h2>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <Plus size={18} /> Add Student
-        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              const params = new URLSearchParams(filters);
+              window.open(`/admin/reports/students?${params}`, '_blank');
+            }}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Download size={18} /> Export
+          </button>
+          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <Plus size={18} /> Add Student
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -77,12 +89,12 @@ const ManageStudents = () => {
         <select value={filters.semester} onChange={e => set('semester', e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">All Semesters</option>
-          {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Sem {s}</option>)}
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Sem {s}</option>)}
         </select>
         <select value={filters.section} onChange={e => set('section', e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">All Sections</option>
-          {['A','B','C','D'].map(s => <option key={s} value={s}>Section {s}</option>)}
+          {['A', 'B', 'C', 'D'].map(s => <option key={s} value={s}>Section {s}</option>)}
         </select>
       </div>
 
@@ -132,42 +144,42 @@ const ManageStudents = () => {
               <h3 className="text-lg font-bold text-gray-800">{formData.id ? 'Edit Student' : 'Add New Student'}</h3>
               <button onClick={resetForm}><X size={20} className="text-gray-400" /></button>
             </div>
-            
+
             <form onSubmit={handleSave} className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <input required placeholder="Full Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input required placeholder="Full Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <input required type="email" placeholder="Email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input required type="email" placeholder="Email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <input required={!formData.id} type="password" placeholder={formData.id ? 'Leave blank to keep current' : 'Password'} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input required={!formData.id} type="password" placeholder={formData.id ? 'Leave blank to keep current' : 'Password'} value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <input required placeholder="Enrollment No" value={formData.enrollment_no} onChange={e => setFormData({...formData, enrollment_no: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input required placeholder="Enrollment No" value={formData.enrollment_no} onChange={e => setFormData({ ...formData, enrollment_no: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <input placeholder="Mobile No (10 digits)" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input placeholder="Mobile No (10 digits)" value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
 
               <div>
-                <select required value={formData.department_id} onChange={e => setFormData({...formData, department_id: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select required value={formData.department_id} onChange={e => setFormData({ ...formData, department_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="">Select Department</option>
                   {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-2 col-span-2 sm:col-span-1">
-                <input required type="number" min="1" max="8" placeholder="Sem" value={formData.semester} onChange={e => setFormData({...formData, semester: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" />
-                <select required value={formData.section} onChange={e => setFormData({...formData, section: e.target.value})} className="w-full border rounded-lg px-2 py-2 text-sm focus:outline-none">
+                <input required type="number" min="1" max="8" placeholder="Sem" value={formData.semester} onChange={e => setFormData({ ...formData, semester: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" />
+                <select required value={formData.section} onChange={e => setFormData({ ...formData, section: e.target.value })} className="w-full border rounded-lg px-2 py-2 text-sm focus:outline-none">
                   <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
                 </select>
-                <input required type="number" min="1" max="4" placeholder="Year" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" />
+                <input required type="number" min="1" max="4" placeholder="Year" value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" />
               </div>
 
               {formData.id && (
                 <div className="col-span-2 flex items-center gap-2">
-                  <input type="checkbox" id="is_active" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
+                  <input type="checkbox" id="is_active" checked={formData.is_active} onChange={e => setFormData({ ...formData, is_active: e.target.checked })} className="rounded text-blue-600 focus:ring-blue-500" />
                   <label htmlFor="is_active" className="text-sm font-medium text-gray-700">Account Active</label>
                 </div>
               )}

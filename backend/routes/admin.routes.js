@@ -3,8 +3,8 @@ const router = express.Router();
 const verifyToken = require('../middleware/auth.middleware');
 const allowRoles = require('../middleware/role.middleware');
 const {
-  getDepartments, 
-  addTeacher, getAllTeachers, updateTeacher, deleteTeacher, 
+  getDepartments,
+  addTeacher, getAllTeachers, updateTeacher, deleteTeacher,
   getAllStudents, addStudent, updateStudent, deleteStudent,
   addStaff, getAllStaff, updateStaff, deleteStaff,
   getOverview, downloadStudentReport, downloadStaffReport

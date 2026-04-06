@@ -1,19 +1,40 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import api from '../../api/axios';
-import { Users, GraduationCap, Building2 } from 'lucide-react';
+import { Users, GraduationCap, Building2, Filter } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({ teachers: 0, students: 0, departments: 6 });
+  const [stats, setStats] = useState({ teachers: 0, students: 0, departments: 0 });
+  const [departments, setDepartments] = useState([]);
+  const [selectedDept, setSelectedDept] = useState('all');
 
   useEffect(() => {
-    Promise.all([
-      api.get('/admin/teachers'),
-      api.get('/admin/students'),
-    ]).then(([t, s]) => {
-      setStats(prev => ({ ...prev, teachers: t.data.length, students: s.data.length }));
-    }).catch(() => {});
+    api.get('/admin/departments')
+      .then(res => {
+        setDepartments(res.data);
+        setStats(prev => ({ ...prev, departments: res.data.length }));
+      })
+      .catch(() => { });
   }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [selectedDept]);
+
+  const fetchStats = () => {
+    const params = selectedDept !== 'all' ? { department_id: selectedDept } : {};
+
+    Promise.all([
+      api.get('/admin/teachers', { params }),
+      api.get('/admin/students', { params }),
+    ]).then(([t, s]) => {
+      setStats(prev => ({
+        ...prev,
+        teachers: t.data.length,
+        students: s.data.length
+      }));
+    }).catch(() => { });
+  };
 
   const cards = [
     { label: 'Total Teachers', value: stats.teachers, icon: Users, color: 'bg-blue-500' },
@@ -23,7 +44,26 @@ const AdminDashboard = () => {
 
   return (
     <Layout>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Admin Dashboard</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Admin Dashboard</h2>
+      </div>
+
+      <div className="flex items-center gap-4 mb-6">
+        <Filter className="text-gray-500" size={18} />
+        <select
+          value={selectedDept}
+          onChange={(e) => setSelectedDept(e.target.value)}
+          className="border border-gray-300 rounded-lg px-4 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">All Departments</option>
+          {departments.map(dept => (
+            <option key={dept.id} value={dept.id}>
+              {dept.name} ({dept.code})
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {cards.map(card => (
           <div key={card.label} className="bg-white rounded-xl shadow-sm p-6 flex items-center gap-4">
