@@ -10,7 +10,21 @@ const {
   submitNoDuesRequest,
   getMyRequests,
   reApplyRequest,
+  deleteNoDuesRequest,
 } = require('../controllers/student.controller');
+
+const path = require('path');
+const multer = require('multer');
+
+// Configure storage for uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, `nodues_${Date.now()}${path.extname(file.originalname)}`)
+});
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 router.use(verifyToken, allowRoles('student'));
 
@@ -23,8 +37,9 @@ router.get('/lab-manuals', getMyLabManuals);
 
 // No Dues Request flow
 router.get('/nodues/teachers', getTeachersForRequest);   // teachers list with assignment status
-router.post('/nodues/submit', submitNoDuesRequest);       // submit request to selected teachers
+router.post('/nodues/submit', upload.single('document'), submitNoDuesRequest);       // submit request to selected teacher
 router.get('/nodues/requests', getMyRequests);            // track all requests
+router.delete('/nodues/requests/:approvalId', deleteNoDuesRequest); // delete a pending request
 router.post('/nodues/reapply', reApplyRequest);           // re-apply after HOD rejection
 
 module.exports = router;

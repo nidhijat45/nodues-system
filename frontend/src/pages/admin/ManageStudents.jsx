@@ -49,12 +49,12 @@ const ManageStudents = () => {
   };
 
   const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to deactivate this student?')) {
+    if (confirm('Are you sure you want to PERMANENTLY delete this student? All their data will be lost.')) {
       try {
         await api.delete(`/admin/students/${id}`);
-        toast.success('Student deactivated.');
+        toast.success('Student deleted permanently.');
         fetchStudents();
-      } catch (err) { toast.error('Error deactivating student'); }
+      } catch (err) { toast.error('Error deleting student.'); }
     }
   };
 
@@ -177,12 +177,6 @@ const ManageStudents = () => {
                 <input required type="number" min="1" max="4" placeholder="Year" value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" />
               </div>
 
-              {formData.id && (
-                <div className="col-span-2 flex items-center gap-2">
-                  <input type="checkbox" id="is_active" checked={formData.is_active} onChange={e => setFormData({ ...formData, is_active: e.target.checked })} className="rounded text-blue-600 focus:ring-blue-500" />
-                  <label htmlFor="is_active" className="text-sm font-medium text-gray-700">Account Active</label>
-                </div>
-              )}
 
               <div className="col-span-2 flex justify-end gap-3 mt-4">
                 <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>

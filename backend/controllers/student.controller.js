@@ -112,25 +112,20 @@ const getMyLabManuals = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────
-// NO DUES REQUEST
-// ─────────────────────────────────────────
-
-// Get all teachers of student's department+semester+section
-// with their assignment/lab manual completion status
+// Get all teachers for student's department with their assignment/lab manual completion status
 const getTeachersForRequest = async (req, res) => {
   try {
     const student_id = req.user.id;
     const { department_id, semester, section } = req.user;
 
-    // Teachers who have assignments/lab manuals for this student
+    // Fetch all teachers of the student's department
     const teachers = await User.findAll({
       where: { role: 'teacher', department_id, is_active: true },
       attributes: ['id', 'name', 'designation', 'is_hod']
     });
 
     const result = await Promise.all(teachers.map(async (teacher) => {
-      // Assignments for this teacher
+      // Assignments for this teacher assigned to this student
       const assignments = await Assignment.findAll({
         where: { teacher_id: teacher.id, department_id, semester, section, is_active: true }
       });
@@ -141,9 +136,6 @@ const getTeachersForRequest = async (req, res) => {
         });
         return {
           id: a.id,
-          assignment_name: a.assignment_name,
-          subject_name: a.subject_name,
-          due_date: a.due_date,
           is_submitted: sub ? sub.is_submitted : false
         };
       }));
@@ -159,24 +151,29 @@ const getTeachersForRequest = async (req, res) => {
         });
         return {
           id: lm.id,
-          subject_name: lm.subject_name,
           is_submitted: sub ? sub.is_submitted : false
         };
       }));
 
-      // Check if all assignments and lab manuals are submitted
-      const allAssignmentsDone = assignmentStatus.every(a => a.is_submitted);
-      const allLabManualsDone = labManualStatus.every(lm => lm.is_submitted);
-      const can_request = allAssignmentsDone && allLabManualsDone;
+      // Summary counts
+      const total_assignments = assignments.length;
+      const submitted_assignments = assignmentStatus.filter(a => a.is_submitted).length;
+      const total_labs = labManuals.length;
+      const submitted_labs = labManualStatus.filter(lm => lm.is_submitted).length;
+
+      // Condition: All work done or No work assigned
+      const can_request = submitted_assignments === total_assignments && submitted_labs === total_labs;
 
       return {
         teacher_id: teacher.id,
         name: teacher.name,
         designation: teacher.designation,
         is_hod: teacher.is_hod,
-        assignments: assignmentStatus,
-        lab_manuals: labManualStatus,
-        can_request  // true only if all submitted
+        total_assignments,
+        submitted_assignments,
+        total_labs,
+        submitted_labs,
+        can_request
       };
     }));
 
@@ -186,25 +183,18 @@ const getTeachersForRequest = async (req, res) => {
   }
 };
 
-// Submit No Dues Request to selected teachers
+// Submit No Dues Request to a specific teacher for a subject
 const submitNoDuesRequest = async (req, res) => {
   try {
     const student_id = req.user.id;
-    const { teacher_ids } = req.body; // array of teacher ids
+    const { teacher_id, subject } = req.body;
+    const document_url = req.file ? `/uploads/${req.file.filename}` : null;
 
-    if (!teacher_ids || !Array.isArray(teacher_ids) || teacher_ids.length === 0)
-      return res.status(400).json({ message: 'Please select at least one teacher.' });
+    if (!teacher_id || !subject)
+      return res.status(400).json({ message: 'Teacher and Subject are required.' });
 
     // Check if request already exists
     let noDuesRequest = await NoDuesRequest.findOne({ where: { student_id } });
-
-    if (noDuesRequest && noDuesRequest.status === 'pending_teachers') {
-      return res.status(409).json({ message: 'Request already pending with teachers.' });
-    }
-
-    if (noDuesRequest && ['pending_account', 'pending_hod', 'pending_exam', 'approved'].includes(noDuesRequest.status)) {
-      return res.status(409).json({ message: 'Request is already in progress or approved.' });
-    }
 
     // Create or reset request
     if (!noDuesRequest) {
@@ -213,19 +203,42 @@ const submitNoDuesRequest = async (req, res) => {
         status: 'pending_teachers'
       });
     } else {
-      // Re-submitting after rejection
-      await noDuesRequest.update({ status: 'pending_teachers' });
-      // Delete old teacher approvals
-      await TeacherApproval.destroy({ where: { nodues_request_id: noDuesRequest.id } });
+      // If it exists and was previously approved or in later steps, 
+      // we might need to reset it to pending_teachers if adding more teacher approvals
+      // But for simplicity, we'll just allow adding approvals if not fully approved yet
+      if (noDuesRequest.status === 'approved') {
+        return res.status(403).json({ message: 'No dues process already completed.' });
+      }
+      
+      // If adding more teachers after it moved to account/hod/exam, 
+      // maybe we should move it back to 'pending_teachers'?
+      // The user's request suggests a dynamic list.
+      if (['pending_account', 'pending_hod', 'pending_exam'].includes(noDuesRequest.status)) {
+         await noDuesRequest.update({ status: 'pending_teachers' });
+      }
+      
+      // If it was draft or rejected, move to pending_teachers
+      if (['draft', 'rejected'].includes(noDuesRequest.status)) {
+        await noDuesRequest.update({ status: 'pending_teachers' });
+      }
     }
 
-    // Create teacher approval rows
-    const approvals = teacher_ids.map(tid => ({
+    // Check if duplicate request for same teacher and subject (optional but good)
+    const existingApproval = await TeacherApproval.findOne({
+      where: { nodues_request_id: noDuesRequest.id, teacher_id, subject }
+    });
+    if (existingApproval) {
+      return res.status(409).json({ message: 'Request already exists for this subject.' });
+    }
+
+    // Create teacher approval row
+    await TeacherApproval.create({
       nodues_request_id: noDuesRequest.id,
-      teacher_id: tid,
+      teacher_id,
+      subject,
+      document_url,
       status: 'pending'
-    }));
-    await TeacherApproval.bulkCreate(approvals, { ignoreDuplicates: true });
+    });
 
     res.status(201).json({
       message: 'No dues request submitted successfully.',
@@ -266,12 +279,19 @@ const getMyRequests = async (req, res) => {
       request_id: noDuesRequest.id,
       overall_status: noDuesRequest.status,
       initiated_at: noDuesRequest.initiated_at,
-      teacher_approvals: noDuesRequest.teacherApprovals?.map(a => ({
-        teacher: a.teacher,
-        status: a.status,
-        comment: a.comment,
-        reviewed_at: a.reviewed_at
-      })),
+      teacher_approvals: noDuesRequest.teacherApprovals?.map(a => {
+        const plain = a.get ? a.get({ plain: true }) : a;
+        return {
+          id: plain.id,
+          approval_id: plain.id,
+          teacher: plain.teacher,
+          subject: plain.subject,
+          document_url: plain.document_url,
+          status: plain.status,
+          comment: plain.comment,
+          reviewed_at: plain.reviewed_at
+        };
+      }),
       account_status: noDuesRequest.accountApproval?.status || 'not_reached',
       hod_approval: noDuesRequest.hodApproval ? {
         hod: noDuesRequest.hodApproval.hod,
@@ -323,6 +343,47 @@ const reApplyRequest = async (req, res) => {
   }
 };
 
+// Delete a pending no dues request
+const deleteNoDuesRequest = async (req, res) => {
+  try {
+    const student_id = req.user.id;
+    const approval_id_raw = req.params.approvalId;
+    
+    if (!approval_id_raw) {
+      return res.status(400).json({ message: 'Missing Approval ID.' });
+    }
+
+    const approval_id = parseInt(approval_id_raw);
+
+    if (isNaN(approval_id)) {
+      return res.status(400).json({ 
+        message: `Invalid Approval ID format: ${approval_id_raw}`, 
+        received: approval_id_raw 
+      });
+    }
+
+    const approval = await TeacherApproval.findOne({
+      where: { id: approval_id },
+      include: [{
+        model: NoDuesRequest,
+        where: { student_id }
+      }]
+    });
+
+    if (!approval)
+      return res.status(404).json({ message: 'Request not found.' });
+
+    if (approval.status !== 'pending')
+      return res.status(400).json({ message: 'Only pending requests can be deleted.' });
+
+    await approval.destroy();
+
+    res.json({ message: 'Request deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
 module.exports = {
   getDashboard,
   getMyAssignments,
@@ -331,4 +392,5 @@ module.exports = {
   submitNoDuesRequest,
   getMyRequests,
   reApplyRequest,
+  deleteNoDuesRequest,
 };

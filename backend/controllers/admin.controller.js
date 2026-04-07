@@ -107,8 +107,8 @@ const deleteTeacher = async (req, res) => {
     if (!teacher)
       return res.status(404).json({ message: 'Teacher not found.' });
 
-    await teacher.update({ is_active: false });
-    res.json({ message: 'Teacher deactivated successfully.' });
+    await teacher.destroy();
+    res.json({ message: 'Teacher deleted permanently.' });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -184,8 +184,8 @@ const deleteStudent = async (req, res) => {
     const { id } = req.params;
     const student = await User.findOne({ where: { id, role: 'student' } });
     if (!student) return res.status(404).json({ message: 'Student not found.' });
-    await student.update({ is_active: false });
-    res.json({ message: 'Student deactivated safely.' });
+    await student.destroy();
+    res.json({ message: 'Student deleted permanently.' });
   } catch (err) { res.status(500).json({ message: 'Server error.', error: err.message }); }
 };
 
@@ -225,27 +225,32 @@ const deleteStaff = async (req, res) => {
   try {
     const { id } = req.params;
     const staff = await User.findOne({ where: { id, role: ['account', 'exam'] } });
-    await staff.update({ is_active: false });
-    res.json({ message: 'Staff deactivated.' });
+    await staff.destroy();
+    res.json({ message: 'Staff deleted permanently.' });
   } catch (err) { res.status(500).json({ message: 'Server error.', error: err.message }); }
 };
 
 // ===================== REPORTS =====================
 const getOverview = async (req, res) => {
   try {
-    const totalStudents = await User.count({ where: { role: 'student', is_active: true } });
+    const totalStudents = await User.count({ where: { role: 'student' } });
+    const totalTeachers = await User.count({ where: { role: 'teacher' } });
+    const totalStaff = await User.count({ where: { role: ['account', 'exam'] } });
+    const totalHODs = await User.count({ where: { role: 'teacher', is_hod: true } });
     const completedStatus = await NoDuesRequest.count({ where: { status: 'approved' } });
-    const pendingStatus = await NoDuesRequest.count({ where: { status: 'pending_teachers' } });
-    res.json({ totalStudents, completedStatus, pendingStatus });
+    const pendingStatus = await NoDuesRequest.count({ where: { status: ['pending_teachers', 'pending_account', 'pending_hod', 'pending_exam'] } });
+    res.json({ totalStudents, totalTeachers, totalStaff, totalHODs, completedStatus, pendingStatus });
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
 // BUG FIX: 'requested_at' → 'initiated_at' (actual column name in schema)
 const downloadStudentReport = async (req, res) => {
   try {
-    const { department_id } = req.query;
+    const { department_id, semester, section } = req.query;
     const where = { role: 'student' };
     if (department_id) where.department_id = department_id;
+    if (semester) where.semester = semester;
+    if (section) where.section = section;
 
     const students = await User.findAll({
       where,
@@ -298,8 +303,9 @@ const downloadStudentReport = async (req, res) => {
     });
 
     const deptSuffix = department_id ? `_dept_${department_id}` : '';
+    const sectionSuffix = section ? `_sec_${section}` : '';
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=Students_NoDues_Report${deptSuffix}.xlsx`);
+    res.setHeader('Content-Disposition', `attachment; filename=Students_NoDues_Report${deptSuffix}${sectionSuffix}.xlsx`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) {
@@ -313,9 +319,15 @@ const downloadStaffReport = async (req, res) => {
 
     // type=teachers se sirf teachers, warna saare staff
     let roles = ['teacher', 'account', 'exam'];
-    if (type === 'teachers') roles = ['teacher'];
+    const where = {};
 
-    const where = { role: roles };
+    if (type === 'teachers') roles = ['teacher'];
+    if (type === 'hod') {
+      roles = ['teacher'];
+      where.is_hod = true;
+    }
+
+    where.role = roles;
     if (department_id) where.department_id = department_id;
 
     const staff = await User.findAll({
@@ -335,7 +347,6 @@ const downloadStaffReport = async (req, res) => {
       { header: 'Designation', key: 'designation', width: 20 },
       { header: 'Department', key: 'department', width: 20 },
       { header: 'Is HOD', key: 'is_hod', width: 10 },
-      { header: 'Status', key: 'status', width: 12 },
     ];
 
     worksheet.getRow(1).font = { bold: true };
@@ -353,13 +364,16 @@ const downloadStaffReport = async (req, res) => {
         designation: s.designation || '-',
         department: s.department ? s.department.name : 'N/A',
         is_hod: s.is_hod ? 'Yes' : 'No',
-        status: s.is_active ? 'Active' : 'Inactive'
       });
     });
 
     const deptSuffix = department_id ? `_dept_${department_id}` : '';
+    let reportName = 'Staff_Report';
+    if (type === 'teachers') reportName = 'Teachers_Report';
+    if (type === 'hod') reportName = 'HOD_Report';
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=Staff_Report${deptSuffix}.xlsx`);
+    res.setHeader('Content-Disposition', `attachment; filename=${reportName}${deptSuffix}.xlsx`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }

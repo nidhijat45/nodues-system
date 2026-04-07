@@ -36,12 +36,12 @@ const ManageStaff = () => {
   };
 
   const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to deactivate this staff member?')) {
+    if (confirm('Are you sure you want to PERMANENTLY delete this staff member? This action is irreversible.')) {
       try {
         await api.delete(`/admin/staff/${id}`);
-        toast.success('Staff deactivated.');
+        toast.success('Staff member deleted permanently.');
         fetchStaff();
-      } catch (err) { toast.error('Error deactivating staff'); }
+      } catch (err) { toast.error('Error deleting staff.'); }
     }
   };
 
@@ -58,7 +58,7 @@ const ManageStaff = () => {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              {['Name', 'Email', 'Role', 'Status', 'Actions'].map(h => (
+              {['Name', 'Email', 'Role', 'Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
               ))}
             </tr>
@@ -69,23 +69,9 @@ const ManageStaff = () => {
                 <td className="px-4 py-3 font-medium text-gray-800">{s.name}</td>
                 <td className="px-4 py-3 text-gray-500">{s.email}</td>
                 <td className="px-4 py-3 text-gray-500 capitalize">{s.role}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {s.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button onClick={() => { setFormData(s); setShowModal(true); }} className="text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded">
-                      <Pencil size={14} />
+                    <button onClick={() => handleDelete(s.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded" title="Delete Staff">
+                      <Trash2 size={14} />
                     </button>
-                    {s.is_active && (
-                      <button onClick={() => handleDelete(s.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded">
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                </td>
               </tr>
             ))}
             {staff.length === 0 && (
@@ -110,12 +96,6 @@ const ManageStaff = () => {
                 <option value="account">Account Department</option>
                 <option value="exam">Exam Department</option>
               </select>
-              {formData.id && (
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="is_active" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                  <label htmlFor="is_active" className="text-sm font-medium text-gray-700">Account Active</label>
-                </div>
-              )}
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>
                 <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Save</button>

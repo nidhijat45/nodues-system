@@ -138,16 +138,35 @@ const TrackRequests = () => {
       {/* Teacher approvals detail */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-4">
         <h3 className="font-semibold text-gray-700 mb-3">Teacher Approvals</h3>
-        <div className="space-y-2">
+        <div className="space-y-4">
           {data.teacher_approvals?.map((t, i) => (
-            <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-              <div>
-                <p className="text-sm font-medium text-gray-700">{t.teacher?.name}</p>
-                <p className="text-xs text-gray-400 capitalize">{t.teacher?.designation}</p>
+            <div key={i} className="flex items-start justify-between py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-lg transition-colors">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-bold text-gray-800">{t.subject || 'General No Dues'}</p>
+                  {t.document_url && (
+                    <a
+                      href={`${api.defaults.baseURL}${t.document_url}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-[10px] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100"
+                    >
+                      <Download size={10} /> View Doc
+                    </a>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <p className="font-medium">{t.teacher?.name}</p>
+                  <span className="text-gray-300">•</span>
+                  <p className="capitalize">{t.teacher?.designation}</p>
+                </div>
               </div>
-              <div className="text-right">
+              <div className="text-right ml-4">
                 <StatusBadge status={t.status} />
-                {t.comment && <p className="text-xs text-red-500 mt-1">{t.comment}</p>}
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {t.reviewed_at ? new Date(t.reviewed_at).toLocaleDateString() : 'Pending'}
+                </p>
+                {t.comment && <p className="text-xs text-red-500 mt-1 italic">"{t.comment}"</p>}
               </div>
             </div>
           ))}

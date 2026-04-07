@@ -60,13 +60,13 @@ const ManageTeachers = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Deactivate this teacher?')) return;
+    if (!confirm('Are you sure you want to PERMANENTLY delete this teacher? This action cannot be undone.')) return;
     try {
       await api.delete(`/admin/teachers/${id}`);
-      toast.success('Teacher deactivated.');
+      toast.success('Teacher deleted permanently.');
       fetchData();
     } catch {
-      toast.error('Failed.');
+      toast.error('Failed to delete teacher.');
     }
   };
 
@@ -127,7 +127,7 @@ const ManageTeachers = () => {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              {['Name', 'Email', 'Department', 'Designation', 'HOD', 'Status', 'Actions'].map(h => (
+              {['Name', 'Email', 'Department', 'Designation', 'HOD', 'Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
               ))}
             </tr>
@@ -141,11 +141,6 @@ const ManageTeachers = () => {
                 <td className="px-4 py-3 capitalize text-gray-500">{t.designation}</td>
                 <td className="px-4 py-3">
                   {t.is_hod ? <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-medium">HOD</span> : '-'}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${t.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {t.is_active ? 'Active' : 'Inactive'}
-                  </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
