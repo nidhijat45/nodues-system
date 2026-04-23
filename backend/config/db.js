@@ -10,6 +10,11 @@ const sequelize = new Sequelize(
     dialect: 'mysql',
     port: process.env.DB_PORT,
     logging: false,
+    dialectOptions: process.env.DB_HOST !== 'localhost' ? {
+      ssl: {
+        rejectUnauthorized: false, // Required for Aiven/Cloud MySQL
+      }
+    } : {}
   }
 );
 
