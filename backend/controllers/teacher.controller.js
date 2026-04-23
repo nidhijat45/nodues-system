@@ -492,15 +492,47 @@ const approveRequest = async (req, res) => {
     const parent_request_id = approval.nodues_request_id;
     await approval.update({ status: 'approved', reviewed_at: new Date() });
 
-    // Check karo agar is request ke sabhi teachers ne approve kar diya
-    const allApprovals = await TeacherApproval.findAll({
-      where: { nodues_request_id: parent_request_id }
+    // --- FIX: Check if ALL required teachers have approved ---
+    const { AccountApproval, NoDuesRequest, Assignment, LabManual } = require('../models');
+    
+    const noduesRequest = await NoDuesRequest.findOne({
+      where: { id: parent_request_id },
+      include: [{ model: User, as: 'student', attributes: ['id', 'department_id', 'semester', 'section'] }]
     });
-    const allApproved = allApprovals.every(a => a.status === 'approved');
 
-    if (allApproved) {
+    const student = noduesRequest.student;
+    
+    // Find all teachers that SHOULD approve this student
+    const [tAssignments, tLabs] = await Promise.all([
+      Assignment.findAll({
+        where: { department_id: student.department_id, semester: student.semester, section: student.section, is_active: true },
+        attributes: ['teacher_id'],
+        group: ['teacher_id']
+      }),
+      LabManual.findAll({
+        where: { department_id: student.department_id, semester: student.semester, section: student.section, is_active: true },
+        attributes: ['teacher_id'],
+        group: ['teacher_id']
+      })
+    ]);
+
+    const requiredTeacherIds = new Set([
+      ...tAssignments.map(a => a.teacher_id),
+      ...tLabs.map(l => l.teacher_id)
+    ]);
+
+    // Find current approvals
+    const currentApprovals = await TeacherApproval.findAll({
+      where: { nodues_request_id: parent_request_id, status: 'approved' }
+    });
+    
+    const approvedTeacherIds = new Set(currentApprovals.map(a => a.teacher_id));
+
+    // Check if all required teachers are in the approved list
+    const allApproved = Array.from(requiredTeacherIds).every(id => approvedTeacherIds.has(id));
+
+    if (requiredTeacherIds.size > 0 && allApproved) {
       // Request ko account department ke liye forward karo
-      const { AccountApproval, NoDuesRequest } = require('../models');
       await NoDuesRequest.update(
         { status: 'pending_account' },
         { where: { id: parent_request_id } }

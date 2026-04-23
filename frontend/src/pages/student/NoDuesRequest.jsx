@@ -35,12 +35,12 @@ const NoDuesRequest = () => {
     fetchData();
   }, []);
 
-  const handleRequest = async (teacherId, teacherName) => {
+  const handleRequest = async (teacherId, teacherName, subjectName) => {
     setSubmitting(teacherId);
     try {
       await api.post('/student/nodues/submit', {
         teacher_id: teacherId,
-        subject: `No Dues Request - ${teacherName}`
+        subject: subjectName || `No Dues - ${teacherName}`
       });
       toast.success(`Request sent to ${teacherName}`);
       fetchData();
@@ -159,12 +159,12 @@ const NoDuesRequest = () => {
                         {existingReq ? (
                           <div className="flex flex-col items-end gap-1">
                             {getStatusBadge(existingReq.status)}
-                            {existingReq.status === 'pending' && (
+                            {(existingReq.status === 'pending' || existingReq.status === 'rejected') && (
                               <button 
                                 onClick={() => handleDelete(existingReq.id)}
-                                className="text-[10px] text-red-500 hover:underline flex items-center gap-1"
+                                className="text-[11px] text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 font-bold mt-1 bg-red-50 px-2 py-1 rounded-lg border border-red-100"
                               >
-                                <Trash2 size={10} /> Cancel
+                                <Trash2 size={12} /> {existingReq.status === 'rejected' ? 'Remove Rejected' : 'Cancel Request'}
                               </button>
                             )}
                             {existingReq.comment && (
@@ -178,7 +178,7 @@ const NoDuesRequest = () => {
                           </div>
                         ) : (
                           <button
-                            onClick={() => handleRequest(t.teacher_id, t.name)}
+                            onClick={() => handleRequest(t.teacher_id, t.name, t.subject_name)}
                             disabled={!t.can_request || submitting === t.teacher_id}
                             className={`inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-sm ${
                               !t.can_request 
