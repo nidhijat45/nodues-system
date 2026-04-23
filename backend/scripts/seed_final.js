@@ -21,9 +21,9 @@ async function seedData() {
     // 1. Seed Teachers
     const teachers = [
       { name: 'Paras Bhanopiya', email: 'paras@gmail.com', password, role: 'teacher', is_hod: true, designation: 'HOD', department_id: deptId, is_active: true },
-      { name: 'Sumeet Kothari', email: 'sumeet@college.com', password, role: 'teacher', is_hod: false, designation: 'Compiler Design Faculty', department_id: deptId, is_active: true },
-      { name: 'Prakash Mishra', email: 'prakash@college.com', password, role: 'teacher', is_hod: false, designation: 'ML Faculty', department_id: deptId, is_active: true },
-      { name: 'Madhu Sharma', email: 'madhu@college.com', password, role: 'teacher', is_hod: false, designation: 'CN Faculty', department_id: deptId, is_active: true }
+      { name: 'Sumeet Kothari', email: 'sumeet@gmail.com', password, role: 'teacher', is_hod: false, designation: 'Compiler Design Faculty', department_id: deptId, is_active: true },
+      { name: 'Prakash Mishra', email: 'prakash@gmail.com', password, role: 'teacher', is_hod: false, designation: 'ML Faculty', department_id: deptId, is_active: true },
+      { name: 'Madhu Sharma', email: 'madhu@gmail.com', password, role: 'teacher', is_hod: false, designation: 'CN Faculty', department_id: deptId, is_active: true }
     ];
 
     for (const t of teachers) {
@@ -43,7 +43,7 @@ async function seedData() {
     for (let i = 1; i <= 10; i++) {
       const studentData = {
         name: `Student ${i}`,
-        email: `student${i}@college.com`,
+        email: `student${i}@gmail.com`,
         password: password,
         role: 'student',
         enrollment_no: `0832CS211${String(i).padStart(3, '0')}`,
