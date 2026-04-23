@@ -6,7 +6,7 @@ const generateToken = (user) => {
   return jwt.sign(
     { id: user.id, role: user.role, department_id: user.department_id, is_hod: user.is_hod },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
 
@@ -17,16 +17,30 @@ const login = async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: 'Email and password required.' });
     
-    console.log(`Login attempt for email: "${email}", password length: ${password.length}`);
+    console.log(`Login attempt for email: "${email}"`);
+
+    if (!process.env.JWT_SECRET) {
+      console.error('CRITICAL: JWT_SECRET is not defined in environment.');
+      return res.status(500).json({ message: 'Server configuration error: JWT_SECRET missing.' });
+    }
 
     const trimmedEmail = email.trim();
     const user = await User.findOne({ where: { email: trimmedEmail, is_active: true } });
-    if (!user) return res.status(404).json({ message: 'User not found.' });
+    if (!user) {
+      console.log('Login failed: User not found or inactive');
+      return res.status(404).json({ message: 'User not found.' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Incorrect password.' });
+    if (!isMatch) {
+      console.log('Login failed: Incorrect password');
+      return res.status(401).json({ message: 'Incorrect password.' });
+    }
 
+    console.log('Password matched. Generating token...');
     const token = generateToken(user);
+    console.log('Token generated successfully.');
+
     res.json({
       token,
       user: {
@@ -37,6 +51,7 @@ const login = async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('LOGIN ERROR:', err);
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
 };

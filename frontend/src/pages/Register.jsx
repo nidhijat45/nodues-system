@@ -15,6 +15,11 @@ const Register = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Reset form on mount
+    setForm({
+      name: '', email: '', password: '', mobile: '',
+      enrollment_no: '', department_id: '', semester: '', section: '', year: ''
+    });
     api.get('/admin/departments').then(res => setDepartments(res.data)).catch(() => { });
   }, []);
 
@@ -65,97 +70,129 @@ const Register = () => {
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg p-8">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Student Registration</h1>
-          <p className="text-gray-500 mt-1 text-sm">Create your account</p>
+    <div className="min-h-screen flex flex-col md:flex-row bg-white">
+      {/* Left Side: Image & Branding */}
+      <div className="hidden md:flex md:w-1/2 lg:w-3/5 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
+          style={{ backgroundImage: `url('https://d13loartjoc1yn.cloudfront.net/upload/institute/images/large/170406112121_CDGI_Image_Building.webp')` }}
+        >
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-[0.5px]"></div>
         </div>
+        <div className="relative z-10 flex flex-col justify-end p-16 text-white w-full">
+          <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20">
+            <h2 className="text-4xl lg:text-5xl font-black mb-4 tracking-tighter">
+              Join CDGI-Dues
+            </h2>
+            <p className="text-xl text-blue-50 font-medium leading-relaxed">
+              Register now to start your digital clearance journey. Fast, transparent, and built for success.
+            </p>
+          </div>
+        </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <input required value={form.name} onChange={e => set('name', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Your name" />
+      {/* Right Side: Register Form */}
+      <div className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center p-6 md:p-12 bg-gray-50/30 overflow-y-auto">
+        <div className="w-full max-w-md py-8">
+          <div className="text-center mb-8">
+            <div className="bg-white w-20 h-20 rounded-[1.75rem] flex items-center justify-center mx-auto mb-5 shadow-sm border border-gray-100 overflow-hidden">
+              <img 
+                src="https://content.jdmagicbox.com/comp/indore/81/0731p731stdk002581/catalogue/chameli-devi-group-of-institutions-khandwa-road-indore-institutes-3gbf0rj.jpg" 
+                alt="Logo" 
+                className="w-16 h-16 object-contain mix-blend-multiply"
+              />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Enrollment No</label>
-              <input required value={form.enrollment_no} onChange={e => set('enrollment_no', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="0901CS211001" />
-            </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Create Account</h1>
+            <p className="text-gray-500 mt-1 font-medium">Step into the digital future of CDGI</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input required type="email" value={form.email} onChange={e => set('email', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@email.com" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input required type="password" value={form.password} onChange={e => set('password', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="••••••••" />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
+                <input required value={form.name} onChange={e => set('name', e.target.value)}
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="John Doe" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Enrollment</label>
+                <input required value={form.enrollment_no} onChange={e => set('enrollment_no', e.target.value)}
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="0832CS..." />
+              </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mobile</label>
-              <input required value={form.mobile} onChange={e => set('mobile', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="9876543210" />
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Official Email</label>
+              <input required type="email" value={form.email} onChange={e => set('email', e.target.value)}
+                className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                placeholder="you@gmail.com" />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-            <select required value={form.department_id} onChange={e => set('department_id', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">Select Department</option>
-              {departments.map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
-            </select>
-          </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password</label>
+                <input required type="password" value={form.password} onChange={e => set('password', e.target.value)}
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="••••••••" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Mobile No</label>
+                <input required value={form.mobile} onChange={e => set('mobile', e.target.value)}
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="91..." />
+              </div>
+            </div>
 
-          <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
-              <select required value={form.semester} onChange={e => set('semester', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Sem</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>{s}</option>)}
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Department</label>
+              <select required value={form.department_id} onChange={e => set('department_id', e.target.value)}
+                className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer">
+                <option value="">Select Department</option>
+                {departments.map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
-              <select required value={form.section} onChange={e => set('section', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Sec</option>
-                {['A', 'B', 'C', 'D'].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Semester</label>
+                <select required value={form.semester} onChange={e => set('semester', e.target.value)}
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer">
+                  <option value="">Sem</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Section</label>
+                <select required value={form.section} onChange={e => set('section', e.target.value)}
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer">
+                  <option value="">Sec</option>
+                  {['A', 'B', 'C', 'D'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Year</label>
+                <select required value={form.year} onChange={e => set('year', e.target.value)}
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer">
+                  <option value="">Year</option>
+                  {[1, 2, 3, 4].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
-              <select required value={form.year} onChange={e => set('year', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Year</option>
-                {[1, 2, 3, 4].map(y => <option key={y} value={y}>{y}st/nd/rd/th</option>)}
-              </select>
-            </div>
+
+            <button type="submit" disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-lg transition-all shadow-lg shadow-blue-100 active:scale-95 disabled:opacity-50 mt-4 leading-none">
+              {loading ? 'Processing...' : 'Complete Registration'}
+            </button>
+          </form>
+
+          <div className="mt-8 text-center">
+            <p className="text-gray-500 font-medium">
+              Already registered?{' '}
+              <a href="/login" className="text-blue-600 hover:underline font-bold">Sign In here</a>
+            </p>
           </div>
-
-          <button type="submit" disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 mt-2">
-            {loading ? 'Registering...' : 'Register'}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Already have an account?{' '}
-          <a href="/login" className="text-blue-600 hover:underline font-medium">Login here</a>
-        </p>
+        </div>
       </div>
     </div>
   );
