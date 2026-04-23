@@ -8,11 +8,11 @@ const {
 const getPendingRequests = async (req, res) => {
   try {
     const examApprovals = await ExamApproval.findAll({
-      where: { status: 'pending' },
+      where: { status: 'approved' },
       include: [
         {
           model: NoDuesRequest,
-          where: { status: 'pending_exam' },
+          where: { status: 'approved' },
           include: [
             {
               model: User,

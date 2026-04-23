@@ -5,7 +5,7 @@ const allowRoles = require('../middleware/role.middleware');
 const {
   getDepartments,
   addTeacher, getAllTeachers, updateTeacher, deleteTeacher,
-  getAllStudents, addStudent, updateStudent, deleteStudent,
+  getAllStudents, updateStudent, deleteStudent, approveStudent,
   addStaff, getAllStaff, updateStaff, deleteStaff,
   getOverview, downloadStudentReport, downloadStaffReport
 } = require('../controllers/admin.controller');
@@ -21,10 +21,10 @@ router.put('/teachers/:id', updateTeacher);
 router.delete('/teachers/:id', deleteTeacher);
 
 // Students
-router.post('/students', addStudent);
 router.get('/students', getAllStudents);
 router.put('/students/:id', updateStudent);
 router.delete('/students/:id', deleteStudent);
+router.patch('/students/:id/approve', approveStudent);
 
 // Staff
 router.post('/staff', addStaff);

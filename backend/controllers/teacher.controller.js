@@ -113,16 +113,16 @@ const addLabManual = async (req, res) => {
   try {
     const teacher_id = req.user.id;
     const department_id = req.user.department_id;
-    const { subject_name, semester } = req.body;
+    const { subject_name, semester, section } = req.body;
 
-    if (!subject_name || !semester)
-      return res.status(400).json({ message: 'Subject name aur semester required hai.' });
+    if (!subject_name || !semester || !section)
+      return res.status(400).json({ message: 'Subject name, semester aur section required hai.' });
 
-    const labManual = await LabManual.create({ teacher_id, department_id, subject_name, semester });
+    const labManual = await LabManual.create({ teacher_id, department_id, subject_name, semester, section });
 
-    // Us department+sem ke sabhi students ke liye submission rows banao
+    // Us department+sem+section ke sabhi students ke liye submission rows banao
     const students = await User.findAll({
-      where: { role: 'student', department_id, semester, is_active: true }
+      where: { role: 'student', department_id, semester, section, is_active: true }
     });
 
     if (students.length > 0) {
@@ -159,12 +159,12 @@ const updateLabManual = async (req, res) => {
   try {
     const { id } = req.params;
     const teacher_id = req.user.id;
-    const { subject_name, semester } = req.body;
+    const { subject_name, semester, section } = req.body;
 
     const labManual = await LabManual.findOne({ where: { id, teacher_id } });
     if (!labManual) return res.status(404).json({ message: 'Lab manual not found.' });
 
-    await labManual.update({ subject_name, semester });
+    await labManual.update({ subject_name, semester, section });
     res.json({ message: 'Lab manual updated successfully.', labManual });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
@@ -441,7 +441,7 @@ const getRequests = async (req, res) => {
       }));
 
       const labManuals = await LabManual.findAll({
-        where: { teacher_id, department_id: student.department_id, semester: student.semester, is_active: true }
+        where: { teacher_id, department_id: student.department_id, semester: student.semester, section: student.section, is_active: true }
       });
 
       const labManualStatus = await Promise.all(labManuals.map(async (lm) => {
@@ -485,15 +485,16 @@ const approveRequest = async (req, res) => {
     const teacher_id = req.user.id;
 
     const approval = await TeacherApproval.findOne({
-      where: { nodues_request_id: requestId, teacher_id }
+      where: { id: requestId, teacher_id }
     });
     if (!approval) return res.status(404).json({ message: 'Request not found.' });
 
+    const parent_request_id = approval.nodues_request_id;
     await approval.update({ status: 'approved', reviewed_at: new Date() });
 
     // Check karo agar is request ke sabhi teachers ne approve kar diya
     const allApprovals = await TeacherApproval.findAll({
-      where: { nodues_request_id: requestId }
+      where: { nodues_request_id: parent_request_id }
     });
     const allApproved = allApprovals.every(a => a.status === 'approved');
 
@@ -502,10 +503,10 @@ const approveRequest = async (req, res) => {
       const { AccountApproval, NoDuesRequest } = require('../models');
       await NoDuesRequest.update(
         { status: 'pending_account' },
-        { where: { id: requestId } }
+        { where: { id: parent_request_id } }
       );
       await AccountApproval.findOrCreate({
-        where: { nodues_request_id: requestId },
+        where: { nodues_request_id: parent_request_id },
         defaults: { status: 'pending' }
       });
     }
@@ -524,10 +525,11 @@ const rejectRequest = async (req, res) => {
     const { comment } = req.body;
 
     const approval = await TeacherApproval.findOne({
-      where: { nodues_request_id: requestId, teacher_id }
+      where: { id: requestId, teacher_id }
     });
     if (!approval) return res.status(404).json({ message: 'Request not found.' });
 
+    const parent_request_id = approval.nodues_request_id;
     await approval.update({
       status: 'rejected',
       comment: comment || null,
@@ -537,7 +539,7 @@ const rejectRequest = async (req, res) => {
     // Overall request rejected mark karo
     await NoDuesRequest.update(
       { status: 'rejected' },
-      { where: { id: requestId } }
+      { where: { id: parent_request_id } }
     );
 
     res.json({ message: 'Request rejected.' });

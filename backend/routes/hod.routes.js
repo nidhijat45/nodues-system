@@ -6,6 +6,7 @@ const {
   getPendingRequests,
   approveRequest,
   rejectRequest,
+  getDepartmentReport,
 } = require('../controllers/hod.controller');
 
 router.use(verifyToken, allowRoles('teacher'));
@@ -13,5 +14,6 @@ router.use(verifyToken, allowRoles('teacher'));
 router.get('/requests', getPendingRequests);
 router.patch('/requests/:requestId/approve', approveRequest);
 router.patch('/requests/:requestId/reject', rejectRequest);
+router.get('/reports', getDepartmentReport);
 
 module.exports = router;

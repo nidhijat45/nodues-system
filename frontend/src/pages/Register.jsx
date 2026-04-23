@@ -53,9 +53,8 @@ const Register = () => {
     setLoading(true);
     try {
       const res = await api.post('/auth/register', form);
-      login(res.data.token, res.data.user);
-      toast.success('Registration successful!');
-      navigate('/student');
+      toast.success(res.data.message || 'Registration successful! Wait for admin approval.', { duration: 6000 });
+      navigate('/login');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed.');
     } finally {

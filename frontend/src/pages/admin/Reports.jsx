@@ -148,7 +148,7 @@ const AdminReports = () => {
                 <option value="students">Students (No-Dues Status)</option>
                 <option value="teachers">Teachers List</option>
                 <option value="hod">HODs Only</option>
-                <option value="staff">Operational Staff</option>
+                <option value="staff">Support Staff</option>
               </select>
             </div>
 

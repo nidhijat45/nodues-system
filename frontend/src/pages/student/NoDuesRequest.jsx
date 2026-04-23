@@ -97,103 +97,111 @@ const NoDuesRequest = () => {
           <p className="text-gray-400 font-medium">Checking your submission status...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {teachers.map((t) => {
-            const existingReq = requests.find(r => r.teacher?.id === t.teacher_id);
-            const isAssignmentsPending = t.submitted_assignments < t.total_assignments;
-            const isLabsPending = t.submitted_labs < t.total_labs;
-            const isPending = isAssignmentsPending || isLabsPending;
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50/50 border-b border-gray-100 font-bold text-gray-400 text-[11px] uppercase tracking-wider">
+                  <th className="px-6 py-4">Faculty Name</th>
+                  <th className="px-6 py-4">Assignment</th>
+                  <th className="px-6 py-4">Lab Work</th>
+                  <th className="px-6 py-4 text-right">No-Dues Request</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {teachers.map((t) => {
+                  const existingReq = requests.find(r => r.teacher?.id === t.teacher_id);
+                  
+                  const getStatusBadgeSmall = (status, count) => {
+                    if (status === 'Submitted') {
+                      return (
+                        <div className="flex items-center gap-2">
+                           <span className="flex items-center gap-1 text-[11px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100">
+                            <CheckCircle size={10} /> {status}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">{count}</span>
+                        </div>
+                      );
+                    }
+                    if (status === 'Not Submitted') {
+                      return (
+                        <div className="flex items-center gap-2">
+                           <span className="flex items-center gap-1 text-[11px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-lg border border-red-100">
+                            <AlertCircle size={10} /> {status}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">{count}</span>
+                        </div>
+                      );
+                    }
+                    return <span className="text-[11px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">N/A</span>;
+                  };
 
-            return (
-              <div key={t.teacher_id} className={`bg-white rounded-2xl shadow-sm border p-6 transition-all ${existingReq ? 'border-blue-100 bg-blue-50/10' : 'border-gray-100 hover:shadow-md'}`}>
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-gray-100 p-2 rounded-xl text-gray-600">
-                      <Users size={24} />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-800">{t.name}</h4>
-                      <p className="text-sm text-gray-500 capitalize">{t.designation}</p>
-                    </div>
-                  </div>
-                  {existingReq ? (
-                    <div className="flex flex-col items-end gap-2">
-                      {getStatusBadge(existingReq.status)}
-                      {existingReq.status === 'pending' && (
-                        <button 
-                          onClick={() => handleDelete(existingReq.id)}
-                          className="text-xs text-red-500 hover:underline flex items-center gap-1"
-                        >
-                          <Trash2 size={12} /> Cancel Request
-                        </button>
-                      )}
-                    </div>
-                  ) : isPending ? (
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="flex items-center gap-1 text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-lg">
-                        <AlertCircle size={12} /> Submissions Pending
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                      <UserCheck size={12} /> Ready to Request
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className={`p-3 rounded-xl border ${isAssignmentsPending ? 'bg-red-50/50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
-                    <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-1">Assignments</p>
-                    <div className="flex items-end justify-between">
-                      <p className={`text-xl font-black ${isAssignmentsPending ? 'text-red-600' : 'text-gray-700'}`}>
-                        {t.submitted_assignments}<span className="text-sm text-gray-400 font-normal">/{t.total_assignments}</span>
-                      </p>
-                      {t.total_assignments > 0 && !isAssignmentsPending && <CheckCircle size={18} className="text-green-500 mb-1" />}
-                    </div>
-                  </div>
-                  <div className={`p-3 rounded-xl border ${isLabsPending ? 'bg-red-50/50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
-                    <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-1">Lab Manuals</p>
-                    <div className="flex items-end justify-between">
-                      <p className={`text-xl font-black ${isLabsPending ? 'text-red-600' : 'text-gray-700'}`}>
-                        {t.submitted_labs}<span className="text-sm text-gray-400 font-normal">/{t.total_labs}</span>
-                      </p>
-                      {t.total_labs > 0 && !isLabsPending && <CheckCircle size={18} className="text-green-500 mb-1" />}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {!existingReq && (
-                    <button
-                      onClick={() => handleRequest(t.teacher_id, t.name)}
-                      disabled={isPending || submitting === t.teacher_id}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
-                        isPending 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
-                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg active:scale-95'
-                      }`}
-                    >
-                      {submitting === t.teacher_id ? (
-                        <div className="h-5 w-5 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
-                      ) : isPending ? (
-                        <>Complete Pending Work</>
-                      ) : (
-                        <><Send size={18} /> Request No Dues</>
-                      )}
-                    </button>
-                  )}
-                  {existingReq && existingReq.comment && (
-                    <div className="flex-1 p-3 bg-red-50 border border-red-100 rounded-xl flex gap-2">
-                      <Info size={16} className="text-red-500 shrink-0 mt-0.5" />
-                      <p className="text-xs text-red-700 font-medium">
-                        <span className="font-bold">Remark:</span> {existingReq.comment}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                  return (
+                    <tr key={t.teacher_id} className={`hover:bg-blue-50/20 transition-colors ${existingReq ? 'bg-blue-50/10' : ''}`}>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gray-100 p-2 rounded-xl text-gray-600">
+                            <Users size={20} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">{t.name}</p>
+                            <p className="text-[10px] text-gray-400 capitalize font-medium">{t.designation}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {getStatusBadgeSmall(t.assignment_status, t.assignment_count)}
+                      </td>
+                      <td className="px-6 py-4">
+                        {getStatusBadgeSmall(t.lab_status, t.lab_count)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {existingReq ? (
+                          <div className="flex flex-col items-end gap-1">
+                            {getStatusBadge(existingReq.status)}
+                            {existingReq.status === 'pending' && (
+                              <button 
+                                onClick={() => handleDelete(existingReq.id)}
+                                className="text-[10px] text-red-500 hover:underline flex items-center gap-1"
+                              >
+                                <Trash2 size={10} /> Cancel
+                              </button>
+                            )}
+                            {existingReq.comment && (
+                               <div className="p-1.5 bg-red-50 border border-red-100 rounded-lg flex gap-1 mt-1 max-w-[200px]">
+                                  <Info size={10} className="text-red-500 shrink-0 mt-0.5" />
+                                  <p className="text-[9px] text-red-700 font-medium leading-tight">
+                                    {existingReq.comment}
+                                  </p>
+                                </div>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleRequest(t.teacher_id, t.name)}
+                            disabled={!t.can_request || submitting === t.teacher_id}
+                            className={`inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-sm ${
+                              !t.can_request 
+                              ? 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100' 
+                              : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow shadow-blue-200'
+                            }`}
+                          >
+                            {submitting === t.teacher_id ? (
+                              <div className="h-3 w-3 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
+                            ) : !t.can_request ? (
+                              <>Pending Work</>
+                            ) : (
+                              <><Send size={12} /> Send Request</>
+                            )}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </Layout>

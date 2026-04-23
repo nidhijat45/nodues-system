@@ -35,6 +35,7 @@ import AccountFees from './pages/account/Fees';
 
 // HOD page
 import HODDashboard from './pages/hod/Dashboard';
+import DepartmentReport from './pages/hod/DepartmentReport';
 
 // Exam page
 import ExamDashboard from './pages/exam/Dashboard';
@@ -80,6 +81,7 @@ function App() {
           {/* HOD */}
           <Route path="/hod" element={<PrivateRoute roles={['teacher']}><HODDashboard /></PrivateRoute>} />
           <Route path="/hod/requests" element={<PrivateRoute roles={['teacher']}><HODDashboard /></PrivateRoute>} />
+          <Route path="/hod/reports" element={<PrivateRoute roles={['teacher']}><DepartmentReport /></PrivateRoute>} />
 
           {/* Exam */}
           <Route path="/exam" element={<PrivateRoute roles={['exam']}><ExamDashboard /></PrivateRoute>} />

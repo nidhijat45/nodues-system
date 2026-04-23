@@ -2,15 +2,28 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronDown, ChevronUp, Bell, Users, Clock } from 'lucide-react';
 
 const HODDashboard = () => {
   const [requests, setRequests] = useState([]);
+  const [stats, setStats] = useState(null);
   const [expanded, setExpanded] = useState(null);
   const [rejectComment, setRejectComment] = useState('');
   const [rejectId, setRejectId] = useState(null);
 
-  const fetch = () => api.get('/hod/requests').then(r => setRequests(r.data)).catch(() => {});
+  const fetch = async () => {
+    try {
+      const [rRes, sRes] = await Promise.all([
+        api.get('/hod/requests'),
+        api.get('/hod/reports')
+      ]);
+      setRequests(rRes.data);
+      setStats(sRes.data.stats);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  
   useEffect(() => { fetch(); }, []);
 
   const approve = async (requestId) => {
@@ -31,7 +44,45 @@ const HODDashboard = () => {
 
   return (
     <Layout>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">HOD — No Dues Requests</h2>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">HOD Dashboard</h2>
+          <p className="text-sm text-gray-500 mt-1">Manage departmental approvals and monitor student progress.</p>
+        </div>
+        <div className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-200">
+           HOD Panel
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+           <div className="bg-orange-50 text-orange-600 p-3 rounded-xl"><Bell size={24} /></div>
+           <div>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Pending Approvals</p>
+              <p className="text-2xl font-black text-gray-800">{requests.length}</p>
+           </div>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+           <div className="bg-green-50 text-green-600 p-3 rounded-xl"><CheckCircle size={24} /></div>
+           <div>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Total Completed</p>
+              <p className="text-2xl font-black text-gray-800">{stats?.completed || 0}</p>
+           </div>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+           <div className="bg-blue-50 text-blue-600 p-3 rounded-xl"><Users size={24} /></div>
+           <div>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Total Students</p>
+              <p className="text-2xl font-black text-gray-800">{stats?.total || 0}</p>
+           </div>
+        </div>
+      </div>
+
+      <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+        <Clock size={18} className="text-gray-400" />
+        Departmental No-Dues Approvals (HOD Signature)
+      </h3>
 
       <div className="space-y-4">
         {requests.map(r => (

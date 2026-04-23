@@ -1,3 +1,4 @@
+const PDFDocument = require('pdfkit');
 const {
   User, Department, Assignment, LabManual,
   AssignmentSubmission, LabManualSubmission,
@@ -23,12 +24,8 @@ const getDashboard = async (req, res) => {
       where: { student_id, is_submitted: false }
     });
 
-    // No dues request status
-    const noDuesRequest = await NoDuesRequest.findOne({ where: { student_id } });
-
     res.json({
       student,
-      pending_assignments: pendingAssignments,
       nodues_status: noDuesRequest ? noDuesRequest.status : 'not_initiated'
     });
   } catch (err) {
@@ -161,23 +158,27 @@ const getTeachersForRequest = async (req, res) => {
       const total_labs = labManuals.length;
       const submitted_labs = labManualStatus.filter(lm => lm.is_submitted).length;
 
+      // Filter: Only include teachers who teach this student's section/semester
+      if (total_assignments === 0 && total_labs === 0) return null;
+
       // Condition: All work done or No work assigned
-      const can_request = submitted_assignments === total_assignments && submitted_labs === total_labs;
+      const can_request = (total_assignments === 0 || submitted_assignments === total_assignments) && 
+                          (total_labs === 0 || submitted_labs === total_labs);
 
       return {
         teacher_id: teacher.id,
         name: teacher.name,
         designation: teacher.designation,
         is_hod: teacher.is_hod,
-        total_assignments,
-        submitted_assignments,
-        total_labs,
-        submitted_labs,
+        assignment_status: total_assignments === 0 ? 'N/A' : (submitted_assignments === total_assignments ? 'Submitted' : 'Not Submitted'),
+        assignment_count: `${submitted_assignments}/${total_assignments}`,
+        lab_status: total_labs === 0 ? 'N/A' : (submitted_labs === total_labs ? 'Submitted' : 'Not Submitted'),
+        lab_count: `${submitted_labs}/${total_labs}`,
         can_request
       };
     }));
 
-    res.json(result);
+    res.json(result.filter(Boolean));
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -384,6 +385,87 @@ const deleteNoDuesRequest = async (req, res) => {
   }
 };
 
+const downloadMyCertificate = async (req, res) => {
+  try {
+    const student_id = req.user.id;
+    const noDuesRequest = await NoDuesRequest.findOne({
+      where: { student_id, status: 'approved' },
+      include: [
+        {
+          model: User, as: 'student',
+          attributes: ['name', 'enrollment_no', 'semester', 'section', 'department_id'],
+          include: [{ model: Department, as: 'department', attributes: ['name', 'code'] }]
+        },
+        {
+          model: TeacherApproval, as: 'teacherApprovals',
+          include: [{ model: User, as: 'teacher', attributes: ['name', 'designation'] }]
+        },
+        { model: AccountApproval, as: 'accountApproval' },
+        { model: HODApproval, as: 'hodApproval', include: [{ model: User, as: 'hod', attributes: ['name'] }] }
+      ]
+    });
+
+    if (!noDuesRequest) return res.status(404).json({ message: 'Approved request not found.' });
+
+    const student = noDuesRequest.student;
+    const doc = new PDFDocument({ margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=nodues_${student.enrollment_no}.pdf`);
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(22).font('Helvetica-Bold').text('NO DUES CERTIFICATE', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(10).font('Helvetica').text('College Management System', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(1.5);
+
+    // Student Details
+    doc.fontSize(14).font('Helvetica-Bold').text('Student Information');
+    doc.moveDown(0.5);
+    doc.fontSize(11).font('Helvetica');
+    doc.text(`Name            : ${student.name.toUpperCase()}`);
+    doc.text(`Enrollment No   : ${student.enrollment_no}`);
+    doc.text(`Department      : ${student.department?.name} (${student.department?.code})`);
+    doc.text(`Semester/Section: Sem ${student.semester} - Section ${student.section}`);
+    doc.moveDown(1.5);
+
+    // Clearance Table
+    doc.fontSize(14).font('Helvetica-Bold').text('Departmental Clearances');
+    doc.moveDown(0.8);
+    
+    // Account Dept
+    doc.fontSize(11).font('Helvetica-Bold').text('Accounts & Fee Section:', { continued: true });
+    doc.font('Helvetica').text(` ${noDuesRequest.accountApproval?.status?.toUpperCase() || 'APPROVED'}`);
+    doc.moveDown(0.5);
+
+    // Teacher Approvals
+    doc.fontSize(11).font('Helvetica-Bold').text('Faculty Clearances:');
+    doc.moveDown(0.3);
+    doc.font('Helvetica');
+    noDuesRequest.teacherApprovals?.forEach((ta, index) => {
+      doc.text(`${index + 1}. ${ta.teacher?.name} (${ta.subject || 'Faculty'}) - ${ta.status.toUpperCase()}`);
+    });
+    doc.moveDown(1);
+
+    // HOD
+    doc.fontSize(11).font('Helvetica-Bold').text('HOD Approval:', { continued: true });
+    doc.font('Helvetica').text(` ${noDuesRequest.hodApproval?.status?.toUpperCase() || 'APPROVED'} BY ${noDuesRequest.hodApproval?.hod?.name || 'HOD'}`);
+    doc.moveDown(2);
+
+    // Footer
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(1);
+    doc.fontSize(10).font('Helvetica-Oblique').text('This is a digitally generated certificate and does not require a physical signature.', { align: 'center' });
+    doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, { align: 'center' });
+
+    doc.end();
+  } catch (err) {
+    res.status(500).json({ message: 'Download failed.', error: err.message });
+  }
+};
+
 module.exports = {
   getDashboard,
   getMyAssignments,
@@ -393,4 +475,5 @@ module.exports = {
   getMyRequests,
   reApplyRequest,
   deleteNoDuesRequest,
+  downloadMyCertificate
 };

@@ -38,3 +38,13 @@ Thumbs.db
 # Database
 database/*.sqlite
 database/*.log
+
+# Temporary Scripts
+backend/check-db.js
+backend/cleanup-users.js
+backend/find-student.js
+backend/list-users.js
+backend/migrate-lab.js
+fetch_output.txt
+tmp_test.js
+C:\Users\ADMIN\.gemini\antigravity\brain\d260b496-25a4-4c8e-84ce-855fc22c0e63\walkthrough_final_flow.md

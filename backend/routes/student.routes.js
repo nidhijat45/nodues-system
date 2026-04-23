@@ -11,6 +11,7 @@ const {
   getMyRequests,
   reApplyRequest,
   deleteNoDuesRequest,
+  downloadMyCertificate
 } = require('../controllers/student.controller');
 
 const path = require('path');
@@ -41,5 +42,6 @@ router.post('/nodues/submit', upload.single('document'), submitNoDuesRequest);  
 router.get('/nodues/requests', getMyRequests);            // track all requests
 router.delete('/nodues/requests/:approvalId', deleteNoDuesRequest); // delete a pending request
 router.post('/nodues/reapply', reApplyRequest);           // re-apply after HOD rejection
+router.get('/nodues/certificate', downloadMyCertificate);    // download finalized certificate
 
 module.exports = router;

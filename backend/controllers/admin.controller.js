@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const ExcelJS = require('exceljs');
 const { User, Department, NoDuesRequest } = require('../models');
+const generatePassword = require('../utils/generatePassword');
 
 // Get all departments
 const getDepartments = async (req, res) => {
@@ -16,12 +17,14 @@ const getDepartments = async (req, res) => {
 const addTeacher = async (req, res) => {
   try {
     const {
-      name, email, password, mobile,
+      name, email, mobile,
       department_id, designation, is_hod
     } = req.body;
 
-    if (!name || !email || !password || !department_id || !designation)
-      return res.status(400).json({ message: 'Fill all required feilds.' });
+    if (!name || !email || !department_id || !designation)
+      return res.status(400).json({ message: 'Fill all required fields.' });
+
+    const password = generatePassword();
 
     const exists = await User.findOne({ where: { email } });
     if (exists)
@@ -47,7 +50,8 @@ const addTeacher = async (req, res) => {
       teacher: {
         id: teacher.id, name: teacher.name,
         email: teacher.email, designation: teacher.designation,
-        is_hod: teacher.is_hod, department_id: teacher.department_id
+        is_hod: teacher.is_hod, department_id: teacher.department_id,
+        password: password // Return plain password to admin
       }
     });
   } catch (err) {
@@ -118,15 +122,16 @@ const deleteTeacher = async (req, res) => {
 // BUG FIX: removed invalid 'no_dues_status' from attributes array
 const getAllStudents = async (req, res) => {
   try {
-    const { department_id, semester, section } = req.query;
+    const { department_id, semester, section, is_active } = req.query;
     const where = { role: 'student' };
     if (department_id) where.department_id = department_id;
     if (semester) where.semester = semester;
     if (section) where.section = section;
+    if (is_active !== undefined) where.is_active = (is_active === 'true');
 
     const students = await User.findAll({
       where,
-      attributes: ['id', 'name', 'email', 'mobile', 'enrollment_no', 'semester', 'section', 'year', 'department_id'],
+      attributes: ['id', 'name', 'email', 'mobile', 'enrollment_no', 'semester', 'section', 'year', 'department_id', 'is_active'],
       include: [
         { model: Department, as: 'department', attributes: ['id', 'name', 'code'] },
         { model: NoDuesRequest, as: 'no_dues_requests', attributes: ['status'] }
@@ -187,6 +192,19 @@ const deleteStudent = async (req, res) => {
     await student.destroy();
     res.json({ message: 'Student deleted permanently.' });
   } catch (err) { res.status(500).json({ message: 'Server error.', error: err.message }); }
+};
+
+const approveStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const student = await User.findOne({ where: { id, role: 'student' } });
+    if (!student) return res.status(404).json({ message: 'Student not found.' });
+
+    await student.update({ is_active: true });
+    res.json({ message: 'Student approved successfully.' });
+  } catch (err) { 
+    res.status(500).json({ message: 'Server error.', error: err.message }); 
+  }
 };
 
 // ===================== STAFF (ACCOUNT / EXAM) =====================
@@ -382,7 +400,7 @@ const downloadStaffReport = async (req, res) => {
 module.exports = {
   getDepartments,
   addTeacher, getAllTeachers, updateTeacher, deleteTeacher,
-  getAllStudents, addStudent, updateStudent, deleteStudent,
+  getAllStudents, addStudent, updateStudent, deleteStudent, approveStudent,
   addStaff, getAllStaff, updateStaff, deleteStaff,
   getOverview, downloadStudentReport, downloadStaffReport
 };

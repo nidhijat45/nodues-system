@@ -38,12 +38,15 @@ const menuItems = {
     { label: 'Student Fees', icon: DollarSign, path: '/account/fees' },
   ],
   hod: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/hod' },
-    { label: 'No Dues Requests', icon: Bell, path: '/hod/requests' },
+    { label: 'HOD Dashboard', icon: LayoutDashboard, path: '/hod' },
+    { label: 'Teacher Requests', icon: ClipboardList, path: '/teacher/requests' },
+    { label: 'Department Report', icon: BarChart, path: '/hod/reports' },
+    { label: 'Assignments', icon: BookOpen, path: '/teacher/assignments' },
+    { label: 'Lab Manuals', icon: FlaskConical, path: '/teacher/lab-manuals' },
+    { label: 'Students (As Teacher)', icon: Users, path: '/teacher/students' },
   ],
   exam: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/exam' },
-    { label: 'Requests', icon: Bell, path: '/exam/requests' },
+    { label: 'Exam Dashboard', icon: LayoutDashboard, path: '/exam' },
   ],
 };
 

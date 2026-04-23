@@ -3,10 +3,12 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
-import { BookOpen, FlaskConical, ClipboardList, AlertCircle } from 'lucide-react';
+import { BookOpen, FlaskConical, ClipboardList, AlertCircle, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -30,14 +32,7 @@ const StudentDashboard = () => {
         <p className="text-gray-500 text-sm mt-1">{user?.enrollment_no} • Sem {user?.semester} {user?.section}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-xl shadow-sm p-6 flex items-center gap-4">
-          <div className="bg-orange-500 text-white p-3 rounded-lg"><AlertCircle size={22} /></div>
-          <div>
-            <p className="text-xs text-gray-500">Pending Assignments</p>
-            <p className="text-3xl font-bold text-gray-800">{data?.pending_assignments || 0}</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-xl shadow-sm p-6 flex items-center gap-4">
           <div className="bg-blue-500 text-white p-3 rounded-lg"><ClipboardList size={22} /></div>
           <div>
@@ -47,12 +42,24 @@ const StudentDashboard = () => {
             </span>
           </div>
         </div>
+        <button 
+          onClick={() => navigate('/student/nodues')}
+          className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-5 hover:shadow-xl transition-all text-left border-2 border-transparent hover:border-blue-100 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+             <FileText size={80} />
+          </div>
+          <div className="bg-blue-600 text-white p-4 rounded-2xl group-hover:scale-110 transition-transform shadow-lg shadow-blue-200"><FileText size={28} /></div>
+          <div>
+            <p className="text-lg font-black text-gray-800 leading-tight">No-Dues Form</p>
+            <p className="text-xs text-gray-500 mt-1 font-medium">Clearance Requests & Status</p>
+          </div>
+        </button>
       </div>
 
       {data?.student && (
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-700 mb-4">Your Details</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+          <h3 className="font-semibold text-gray-700 mb-4">Your Profile Details</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
             {[
               ['Name', data.student.name],
               ['Email', data.student.email],
@@ -61,11 +68,10 @@ const StudentDashboard = () => {
               ['Department', data.student.department?.name],
               ['Semester', data.student.semester],
               ['Section', data.student.section],
-              ['Year', data.student.year],
             ].map(([label, val]) => (
               <div key={label}>
-                <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-                <p className="text-gray-700 font-medium">{val}</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</p>
+                <p className="text-gray-700 font-bold">{val}</p>
               </div>
             ))}
           </div>

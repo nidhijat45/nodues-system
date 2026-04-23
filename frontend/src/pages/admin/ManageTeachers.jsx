@@ -14,6 +14,8 @@ const ManageTeachers = () => {
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [generatedPass, setGeneratedPass] = useState(null);
+  const [lastCreatedEmail, setLastCreatedEmail] = useState('');
 
   const fetchData = () => {
     api.get('/admin/departments').then(r => setDepartments(r.data)).catch(() => { });
@@ -39,10 +41,17 @@ const ManageTeachers = () => {
         await api.put(`/admin/teachers/${editId}`, form);
         toast.success('Teacher updated.');
       } else {
-        await api.post('/admin/teachers', form);
-        toast.success('Teacher added.');
+        const res = await api.post('/admin/teachers', form);
+        setGeneratedPass(res.data.teacher.password);
+        setLastCreatedEmail(res.data.teacher.email);
+        toast.success('Teacher added with auto-generated password.');
       }
-      setShowModal(false);
+      if (!editId) {
+        // Keep modal open to show password if it's a new teacher
+        if (!generatedPass) setShowModal(true); 
+      } else {
+        setShowModal(false);
+      }
       setForm(emptyForm);
       setEditId(null);
       fetchData();
@@ -163,15 +172,31 @@ const ManageTeachers = () => {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-800">{editId ? 'Edit Teacher' : 'Add Teacher'}</h3>
-              <button onClick={() => setShowModal(false)}><X size={20} className="text-gray-400" /></button>
+              <button onClick={() => { setShowModal(false); setGeneratedPass(null); }}><X size={20} className="text-gray-400" /></button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-3">
+
+            {generatedPass ? (
+              <div className="bg-green-50 p-4 rounded-xl border border-green-200 mb-4 animate-in fade-in zoom-in duration-300">
+                <p className="text-green-800 font-semibold mb-2">Teacher successfully added!</p>
+                <p className="text-sm text-green-700 mb-1">Generated Login Credentials:</p>
+                <div className="bg-white p-3 rounded-lg border border-green-200 font-mono text-sm break-all">
+                  <p><strong>Email:</strong> {lastCreatedEmail}</p>
+                  <p className="mt-1"><strong>Password:</strong> <span className="text-blue-600 font-bold">{generatedPass}</span></p>
+                </div>
+                <p className="text-xs text-red-600 mt-3 font-medium">Please copy this password now. It will not be shown again!</p>
+                <button 
+                  onClick={() => { setShowModal(false); setGeneratedPass(null); }}
+                  className="w-full bg-green-600 text-white py-2 rounded-lg mt-4 font-medium hover:bg-green-700 transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-3">
               <input required value={form.name} onChange={e => set('name', e.target.value)} placeholder="Full Name"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <input required={!editId} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="Email"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              {!editId && <input required type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder="Password"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />}
               <input value={form.mobile} onChange={e => set('mobile', e.target.value)} placeholder="Mobile"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <select required value={form.department_id} onChange={e => set('department_id', e.target.value)}
@@ -194,6 +219,7 @@ const ManageTeachers = () => {
                 {loading ? 'Saving...' : editId ? 'Update Teacher' : 'Add Teacher'}
               </button>
             </form>
+            )}
           </div>
         </div>
       )}

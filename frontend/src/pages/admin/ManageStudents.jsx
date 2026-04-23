@@ -7,13 +7,14 @@ import { Pencil, Trash2, Plus, X, Download } from 'lucide-react';
 const ManageStudents = () => {
   const [students, setStudents] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [filters, setFilters] = useState({ department_id: '', semester: '', section: '' });
+  const [filters, setFilters] = useState({ department_id: '', semester: '', section: '', is_active: 'true' });
 
   const fetchStudents = () => {
     const params = new URLSearchParams();
     if (filters.department_id) params.append('department_id', filters.department_id);
     if (filters.semester) params.append('semester', filters.semester);
     if (filters.section) params.append('section', filters.section);
+    if (filters.is_active) params.append('is_active', filters.is_active);
     api.get(`/admin/students?${params}`).then(r => setStudents(r.data)).catch(() => { });
   };
 
@@ -58,6 +59,16 @@ const ManageStudents = () => {
     }
   };
 
+  const handleApprove = async (id) => {
+    try {
+      await api.patch(`/admin/students/${id}/approve`);
+      toast.success('Student approved successfully.');
+      fetchStudents();
+    } catch (err) {
+      toast.error('Failed to approve student.');
+    }
+  };
+
   return (
     <Layout>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -72,9 +83,6 @@ const ManageStudents = () => {
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             <Download size={18} /> Export
-          </button>
-          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            <Plus size={18} /> Add Student
           </button>
         </div>
       </div>
@@ -95,6 +103,11 @@ const ManageStudents = () => {
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">All Sections</option>
           {['A', 'B', 'C', 'D'].map(s => <option key={s} value={s}>Section {s}</option>)}
+        </select>
+        <select value={filters.is_active} onChange={e => set('is_active', e.target.value)}
+          className={`border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${filters.is_active === 'false' ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-white'}`}>
+          <option value="true">Approved Students</option>
+          <option value="false">Pending Approval</option>
         </select>
       </div>
 
@@ -120,10 +133,15 @@ const ManageStudents = () => {
                 <td className="px-4 py-3 text-gray-500">{s.mobile || '-'}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
+                    {s.is_active === false && (
+                      <button onClick={() => handleApprove(s.id)} className="text-green-600 hover:text-green-800 bg-green-50 px-2 py-1 rounded text-xs font-bold" title="Approve Student">
+                        Approve
+                      </button>
+                    )}
                     <button onClick={() => { setFormData(s); setShowModal(true); }} className="text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded" title="Edit Student">
                       <Pencil size={14} />
                     </button>
-                    <button onClick={() => handleDelete(s.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded" title="Deactivate Student">
+                    <button onClick={() => handleDelete(s.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded" title="Delete Student">
                       <Trash2 size={14} />
                     </button>
                   </div>

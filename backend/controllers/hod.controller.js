@@ -73,14 +73,19 @@ const approveRequest = async (req, res) => {
 
     await approval.update({ status: 'approved', reviewed_at: new Date() });
 
-    // Forward to exam department
-    await NoDuesRequest.update({ status: 'pending_exam' }, { where: { id: requestId } });
+    // Mark as fully approved and set completion date
+    await NoDuesRequest.update(
+      { status: 'approved', completed_at: new Date() },
+      { where: { id: requestId } }
+    );
+
+    // Still create ExamApproval record for record-keeping but as auto-approved
     await ExamApproval.findOrCreate({
       where: { nodues_request_id: requestId },
-      defaults: { status: 'pending' }
+      defaults: { status: 'approved', reviewed_at: new Date() }
     });
 
-    res.json({ message: 'Request approved. Forwarded to exam department.' });
+    res.json({ message: 'Request approved. Process completed.' });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -115,4 +120,55 @@ const rejectRequest = async (req, res) => {
   }
 };
 
-module.exports = { getPendingRequests, approveRequest, rejectRequest };
+// GET - Department-wide report for HOD
+const getDepartmentReport = async (req, res) => {
+  try {
+    const hod_id = req.user.id;
+    const department_id = req.user.department_id;
+
+    const hod = await User.findOne({ where: { id: hod_id, is_hod: true } });
+    if (!hod) return res.status(403).json({ message: 'Access denied. You are not a HOD.' });
+
+    const students = await User.findAll({
+      where: { role: 'student', department_id, is_active: true },
+      attributes: ['id', 'name', 'enrollment_no', 'semester', 'section'],
+      include: [
+        {
+          model: NoDuesRequest,
+          as: 'no_dues_requests',
+          attributes: ['id', 'status', 'initiated_at', 'completed_at']
+        }
+      ],
+      order: [['semester', 'ASC'], ['section', 'ASC'], ['enrollment_no', 'ASC']]
+    });
+
+    const report = students.map(s => {
+      const request = s.no_dues_requests && s.no_dues_requests.length > 0 ? s.no_dues_requests[0] : null;
+      return {
+        id: s.id,
+        name: s.name,
+        enrollment_no: s.enrollment_no,
+        semester: s.semester,
+        section: s.section,
+        status: request ? request.status : 'not_initiated',
+        initiated_at: request ? request.initiated_at : null,
+        completed_at: request ? request.completed_at : null
+      };
+    });
+
+    // Aggregated stats
+    const stats = {
+      total: report.length,
+      completed: report.filter(r => r.status === 'approved').length,
+      in_progress: report.filter(r => r.status !== 'not_initiated' && r.status !== 'approved' && r.status !== 'rejected').length,
+      not_started: report.filter(r => r.status === 'not_initiated').length,
+      rejected: report.filter(r => r.status === 'rejected').length,
+    };
+
+    res.json({ stats, report });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+module.exports = { getPendingRequests, approveRequest, rejectRequest, getDepartmentReport };

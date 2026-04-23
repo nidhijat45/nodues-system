@@ -4,7 +4,7 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X, Download } from 'lucide-react';
 
-const empty = { subject_name: '', semester: '' };
+const empty = { subject_name: '', semester: '', section: '' };
 
 const LabManuals = () => {
   const [manuals, setManuals] = useState([]);
@@ -36,7 +36,7 @@ const LabManuals = () => {
   };
 
   const handleEdit = (m) => {
-    setForm({ subject_name: m.subject_name, semester: m.semester });
+    setForm({ subject_name: m.subject_name, semester: m.semester, section: m.section });
     setEditId(m.id); setShowModal(true);
   };
 
@@ -71,7 +71,7 @@ const LabManuals = () => {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              {['Subject', 'Semester', 'Added On', 'Actions'].map(h => (
+              {['Subject', 'Semester', 'Section', 'Added On', 'Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
               ))}
             </tr>
@@ -81,6 +81,7 @@ const LabManuals = () => {
               <tr key={m.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium text-gray-800">{m.subject_name}</td>
                 <td className="px-4 py-3 text-gray-500">Sem {m.semester}</td>
+                <td className="px-4 py-3 text-gray-500">{m.section}</td>
                 <td className="px-4 py-3 text-gray-500">{new Date(m.created_at).toLocaleDateString()}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
@@ -112,6 +113,11 @@ const LabManuals = () => {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Select Semester</option>
                 {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Sem {s}</option>)}
+              </select>
+              <select required value={form.section} onChange={e => set('section', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Select Section</option>
+                {['A', 'B', 'C', 'D', 'E'].map(s => <option key={s} value={s}>Section {s}</option>)}
               </select>
               <button type="submit" disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">

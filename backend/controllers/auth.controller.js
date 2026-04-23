@@ -93,11 +93,13 @@ const registerStudent = async (req, res) => {
     const student = await User.create({
       name, email, password: hashed, mobile,
       role: 'student', enrollment_no, department_id,
-      semester, section, year
+      semester, section, year,
+      is_active: false // Approval required
     });
 
-    const token = generateToken(student);
-    res.status(201).json({ token, user: { id: student.id, name: student.name, role: 'student' } });
+    res.status(201).json({ 
+      message: 'Registration successful! Please wait for admin approval before logging in.' 
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
