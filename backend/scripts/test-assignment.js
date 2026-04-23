@@ -1,4 +1,4 @@
-const { User, Assignment, Department } = require('./models');
+const { User, Assignment, Department } = require('../models');
 
 async function testFetch() {
   const student = await User.findOne({ where: { role: 'student', is_active: true } });

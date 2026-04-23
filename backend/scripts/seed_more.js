@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { User, Department } = require('./models');
+const { User, Department } = require('../models');
 
 async function seedMissingUsers() {
   const password = await bcrypt.hash('Admin@123', 10);

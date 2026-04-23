@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { User } = require('./models');
+const { User, Department, sequelize } = require('../models');
 
 async function seedData() {
   const password = await bcrypt.hash('Admin@123', 10);
@@ -8,6 +8,16 @@ async function seedData() {
   const section = 'B';
 
   try {
+    await sequelize.sync({ alter: true }); // Create tables if not exist
+    console.log('Database synced successfully.');
+
+    // 0. Seed Departments
+    const [dept, createdDept] = await Department.findOrCreate({
+      where: { id: 1 },
+      defaults: { id: 1, name: 'Computer Science', code: 'CSE' }
+    });
+    console.log(createdDept ? 'Created Computer Science department.' : 'Department exists.');
+
     // 1. Seed Teachers
     const teachers = [
       { name: 'Paras Bhanopiya', email: 'paras@gmail.com', password, role: 'teacher', is_hod: true, designation: 'HOD', department_id: deptId, is_active: true },
