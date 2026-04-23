@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { User, Department, NoDuesRequest } = require('./models');
+const { User, Department, NoDuesRequest } = require('../models');
 
 (async () => {
   try {

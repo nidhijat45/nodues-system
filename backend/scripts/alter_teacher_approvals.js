@@ -1,5 +1,5 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
-const { sequelize } = require('./models');
+const { sequelize } = require('../models');
 
 (async () => {
   try {

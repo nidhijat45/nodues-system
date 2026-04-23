@@ -1,4 +1,4 @@
-const { Department } = require('./models');
+const { Department } = require('../models');
 
 async function checkDepts() {
   try {

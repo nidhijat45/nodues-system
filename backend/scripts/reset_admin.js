@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { User } = require('./models');
+const { User } = require('../models');
 
 async function resetAdminPassword() {
   const newPassword = 'Admin@123';
