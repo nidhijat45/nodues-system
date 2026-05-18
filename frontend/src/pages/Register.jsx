@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -189,7 +189,7 @@ const Register = () => {
           <div className="mt-8 text-center">
             <p className="text-gray-500 font-medium">
               Already registered?{' '}
-              <a href="/login" className="text-blue-600 hover:underline font-bold">Sign In here</a>
+              <Link to="/login" className="text-blue-600 hover:underline font-bold">Sign In here</Link>
             </p>
           </div>
         </div>
