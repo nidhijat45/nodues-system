@@ -23,7 +23,8 @@ async function seedData() {
       { name: 'Paras Bhanopiya', email: 'paras@gmail.com', password, role: 'teacher', is_hod: true, designation: 'HOD', department_id: deptId, is_active: true },
       { name: 'Sumeet Kothari', email: 'sumeet@gmail.com', password, role: 'teacher', is_hod: false, designation: 'Compiler Design Faculty', department_id: deptId, is_active: true },
       { name: 'Prakash Mishra', email: 'prakash@gmail.com', password, role: 'teacher', is_hod: false, designation: 'ML Faculty', department_id: deptId, is_active: true },
-      { name: 'Madhu Sharma', email: 'madhu@gmail.com', password, role: 'teacher', is_hod: false, designation: 'CN Faculty', department_id: deptId, is_active: true }
+      { name: 'Madhu Sharma', email: 'madhu@gmail.com', password, role: 'teacher', is_hod: false, designation: 'CN Faculty', department_id: deptId, is_active: true },
+      { name: 'Vikrant Sharma', email: 'teacher@gmail.com', password, role: 'teacher', is_hod: false, designation: 'Faculty', department_id: deptId, is_active: true }
     ];
 
     for (const t of teachers) {
@@ -39,7 +40,27 @@ async function seedData() {
       }
     }
 
-    // 2. Seed 10 Students
+    // 2. Seed Payal Jat
+    const payalData = {
+      name: 'Payal Jat',
+      email: 'payal@gmail.com',
+      password: password,
+      role: 'student',
+      enrollment_no: '0832CS211000',
+      semester: sem,
+      section: section,
+      department_id: deptId,
+      is_active: true,
+      year: 3
+    };
+    const [payal, createdPayal] = await User.findOrCreate({
+      where: { email: payalData.email },
+      defaults: payalData
+    });
+    if (!createdPayal) await payal.update(payalData);
+    console.log('Created student: Payal Jat');
+
+    // 3. Seed 10 Students
     for (let i = 1; i <= 10; i++) {
       const studentData = {
         name: `Student ${i}`,
@@ -63,6 +84,20 @@ async function seedData() {
       }
     }
     console.log('Created 10 dummy students for Sem 6 Section B');
+
+    // 4. Remove old credentials (cleanup users not in the list)
+    const { Op } = require('sequelize');
+    const allowedEmails = [
+      'admin@gmail.com', 'account@gmail.com', 'exam@gmail.com',
+      'paras@gmail.com', 'sumeet@gmail.com', 'prakash@gmail.com',
+      'madhu@gmail.com', 'teacher@gmail.com', 'payal@gmail.com'
+    ];
+    for (let i = 1; i <= 10; i++) allowedEmails.push(`student${i}@gmail.com`);
+
+    const deleted = await User.destroy({
+      where: { email: { [Op.notIn]: allowedEmails } }
+    });
+    console.log(`Removed ${deleted} old login credentials from database.`);
 
     process.exit(0);
   } catch (err) {

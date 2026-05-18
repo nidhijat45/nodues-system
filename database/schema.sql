@@ -39,7 +39,7 @@ CREATE TABLE users (
 
 -- Default admin
 INSERT INTO users (name, email, password, role) VALUES
-('Admin', 'admin@college.com', '$2b$10$placeholder', 'admin');
+('Admin', 'admin@gmail.com', '$2b$10$placeholder', 'admin');
 
 -- Assignments
 CREATE TABLE assignments (
@@ -155,15 +155,17 @@ CREATE TABLE exam_approvals (
 select * from departments;
 USE nodues_db;
 INSERT INTO users (name, email, password, role)
-VALUES ('Admin', 'admin@college.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
- USE nodues_db;
-UPDATE users 
-SET password = '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' 
-WHERE email = 'admin@college.com';
+VALUES ('Admin', 'admin@gmail.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin')
+ON DUPLICATE KEY UPDATE password = VALUES(password);
+
 INSERT INTO users (name, email, password, role)
-VALUES ('Account Staff', 'account@college.com',
-'$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'account');
+VALUES ('Account Staff', 'account@gmail.com',
+'$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'account')
+ON DUPLICATE KEY UPDATE password = VALUES(password);
+
 INSERT INTO users (name, email, password, role)
-VALUES ('Exam Staff', 'exam@college.com',
-'$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'exam');
-UPDATE users SET is_hod = true WHERE email = 'paras@college.com';
+VALUES ('Exam Staff', 'exam@gmail.com',
+'$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'exam')
+ON DUPLICATE KEY UPDATE password = VALUES(password);
+
+UPDATE users SET is_hod = true WHERE email = 'paras@gmail.com';
