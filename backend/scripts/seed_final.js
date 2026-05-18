@@ -18,7 +18,23 @@ async function seedData() {
     });
     console.log(createdDept ? 'Created Computer Science department.' : 'Department exists.');
 
-    // 1. Seed Teachers
+    // 1. Seed Staff (Admin, Account, Exam)
+    const staff = [
+      { name: 'Admin', email: 'admin@gmail.com', password, role: 'admin', is_active: true },
+      { name: 'Account Staff', email: 'account@gmail.com', password, role: 'account', is_active: true },
+      { name: 'Exam Staff', email: 'exam@gmail.com', password, role: 'exam', is_active: true }
+    ];
+
+    for (const s of staff) {
+      const [user, created] = await User.findOrCreate({
+        where: { email: s.email },
+        defaults: s
+      });
+      if (!created) await user.update(s);
+      console.log(`Created/Updated staff: ${s.name}`);
+    }
+
+    // 2. Seed Teachers
     const teachers = [
       { name: 'Paras Bhanopiya', email: 'paras@gmail.com', password, role: 'teacher', is_hod: true, designation: 'HOD', department_id: deptId, is_active: true },
       { name: 'Sumeet Kothari', email: 'sumeet@gmail.com', password, role: 'teacher', is_hod: false, designation: 'Compiler Design Faculty', department_id: deptId, is_active: true },
@@ -40,7 +56,7 @@ async function seedData() {
       }
     }
 
-    // 2. Seed Payal Jat
+    // 3. Seed Payal Jat
     const payalData = {
       name: 'Payal Jat',
       email: 'payal@gmail.com',
@@ -60,7 +76,7 @@ async function seedData() {
     if (!createdPayal) await payal.update(payalData);
     console.log('Created student: Payal Jat');
 
-    // 3. Seed 10 Students
+    // 4. Seed 10 Students
     for (let i = 1; i <= 10; i++) {
       const studentData = {
         name: `Student ${i}`,
@@ -85,7 +101,7 @@ async function seedData() {
     }
     console.log('Created 10 dummy students for Sem 6 Section B');
 
-    // 4. Remove old credentials (cleanup users not in the list)
+    // 5. Remove old credentials (cleanup users not in the list)
     const { Op } = require('sequelize');
     const allowedEmails = [
       'admin@gmail.com', 'account@gmail.com', 'exam@gmail.com',
